@@ -1,3 +1,8 @@
+/////////////////////////////////
+// TRABALHO ED 2 - HELOÍSA PAZETI
+/////////////////////////////////
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,8 +32,11 @@ void Selection_Sort(Student *students, int N);
 
 ///////////////////////////////////////////////////////////////////// HELPERS
 
-void display(Student students[], int len, int scholarship);
+int SetScholarshipQuant(Student *students, int numberStudents, int numberScholarships);
+void CreateScholarshipList(Student *scholarships, Student *students, int numberStudents, int numberScholarships);
+void Display(Student students[], int len, int scholarship);
 
+///////////////////////////////////////////////////////////////////// MAIN
 
 int main()
 {
@@ -36,17 +44,18 @@ int main()
 	int spotsTaken = 0;
 	int i = 0, j = 0, k = 0;
 
+	Student *students;
 	Student *scholarships;
 	
     scanf("%d", &method);
     scanf("%d %d", &numberStudents, &numberScholarships);
 
-    Student students[numberStudents];
-	Student newList[numberStudents];
+    students = (Student*)malloc(numberStudents * sizeof(Student));
 
     for (i = 0; i < numberStudents; i++)
     {
         Student student;
+		fflush(stdin);
         scanf("%f %d %s", &student.media, &student.reprov, student.name);
         students[i] = student;
     }
@@ -65,38 +74,11 @@ int main()
 			break;
 	}
 
-	for (int k = numberStudents-1; k >= 0; k--)
-	{
-		newList[j] = students[k];
-		j++;
-	}
+	numberScholarships = SetScholarshipQuant(students, numberStudents, numberScholarships);
+	scholarships = (Student*)malloc(numberScholarships * sizeof(Student));
+	CreateScholarshipList(scholarships, students, numberStudents, numberScholarships);
 
-
-	for (k = 0; k < numberStudents; k++)
-	{
-		spotsTaken++;
-		if((newList[k].media == newList[k+1].media) && (newList[k].reprov == newList[k+1].reprov) && (spotsTaken >= numberScholarships))
-			numberScholarships++;		
-	}
-
-	if(numberStudents < numberScholarships)
-		numberScholarships = numberStudents;
-
-	scholarships = (Student*)malloc(numberStudents * sizeof(Student));
-
-	j = 0;
-	for (k = 0; k < numberStudents; k++)
-	{
-		if(newList[k].reprov < 10)
-		{
-			scholarships[j] = newList[k];
-			j++;
-		}
-			
-	}
-
-	display(scholarships, numberStudents, numberScholarships);
-
+	Display(scholarships, numberStudents, numberScholarships);
     return 0;
 }
 
@@ -114,6 +96,11 @@ void Merge_Sort(Student *students, int inicio, int fim)
 	}
 }
 
+// Ordenação crescente:
+// Menor a maior média
+// Médias iguais -> maior a menor n° reprovações
+// Reprovações iguais -> "maior" a "menor" letras
+// É feito assim para depois vetor ser invertido
 void Merge(Student *students, int inicio, int meio, int fim)
 {
 	int i, j, k;
@@ -131,10 +118,9 @@ void Merge(Student *students, int inicio, int meio, int fim)
 			{	
 				if(students[p1].media == students[p2].media)
 				{
-					// COMPARAR REPROVAÇÕES
-					if(students[p1].reprov == students[p2].reprov)
+					if(students[p1].reprov == students[p2].reprov)				// Comparando reprovações
 					{
-						if(strcmp(students[p1].name, students[p2].name) < 0)
+						if(strcmp(students[p1].name, students[p2].name) < 0)	// Comparando nomes
 						{
 							temp[i] = students[p2];
 							p2++;
@@ -156,7 +142,7 @@ void Merge(Student *students, int inicio, int meio, int fim)
 						p1++;
 					}	
 				}
-				else if(students[p1].media > students[p2].media)
+				else if(students[p1].media > students[p2].media)				// COMPARANDO MEDIAS
 				{
 					temp[i] = students[p2];
 					p2++;
@@ -175,9 +161,9 @@ void Merge(Student *students, int inicio, int meio, int fim)
 			}
 			else
 			{
-				if(!flag1)                           // Copia o restante de p1 caso p2 acabe
+				if(!flag1)                           	// Copia o restante de p1 caso p2 acabe
 					temp[i] = students[p1++];
-				else                                // Copia o restante de p2 caso p1 acabe
+				else                                 	// Copia o restante de p2 caso p1 acabe
 					temp[i] = students[p2++];
 			} 
 		}
@@ -191,6 +177,7 @@ void Merge(Student *students, int inicio, int meio, int fim)
 
 ///////////////////////////////////////////////////////////////////// SELECTION SORT
 
+// Mesmo sistema de ordenação do Merge Sort
 void Selection_Sort(Student *students, int N)
 {
 	int i, j, menor;
@@ -201,21 +188,21 @@ void Selection_Sort(Student *students, int N)
 		menor = i;
 		for(j = i+1; j < N; j++)
 		{
-			if(students[j].media < students[menor].media)
+			if(students[j].media < students[menor].media)					// Menor é o que tem menor média
 				menor = j;
 			else if(students[j].media == students[menor].media)
 			{
-				if(students[j].reprov > students[menor].reprov)
+				if(students[j].reprov > students[menor].reprov)				// Menor é o que tem maior n° reprov
 					menor = j;
-				else if(students[j].reprov == students[menor].reprov)
+				else if(students[j].reprov == students[menor].reprov)	
 				{
-					if(strcmp(students[j].name, students[menor].name) > 0)
+					if(strcmp(students[j].name, students[menor].name) > 0)	// Menor é o que tiver "maior" letra
 						menor = j;
 				}
 			}
 		}
 
-		if(i != menor)
+		if(i != menor)			// Faz a troca
 		{
 			troca = students[i];
 			students[i] = students[menor];
@@ -224,10 +211,59 @@ void Selection_Sort(Student *students, int N)
 	}
 }
 
-
 ///////////////////////////////////////////////////////////////////// HELPERS
 
-void display(Student students[], int len, int scholarship)
+// Descobre quantas bolsas precisa
+int SetScholarshipQuant(Student *students, int numberStudents, int numberScholarships)
+{
+	int spotTaken = 0;
+	Student lastStudent;
+
+	if(numberStudents < numberScholarships)		// Se não tiver alunos suficientes reduz número de bolsas
+		return numberStudents;
+	else
+	{
+		for (int k = numberStudents-1; k >= 0; k--)
+		{
+			if(students[k].reprov <= 10)
+			{
+				spotTaken++;
+				if(spotTaken == numberScholarships) 		// Encontra último estudante dentro do limite de bolsas
+					lastStudent = students[k];
+				else if (spotTaken > numberScholarships)
+				{
+					if((students[k].media == lastStudent.media) && (students[k].reprov == lastStudent.reprov)) // Da mais bolsa
+						numberScholarships++;
+				}
+			}
+		}
+
+		if(spotTaken < numberScholarships)		// Se não tiver pessoas o suficiente reduz número de bolsas
+			numberScholarships = spotTaken;
+	}
+	
+	return numberScholarships;
+}
+
+// Cria um vetor final com apenas os estudantes que conseguiram as bolsas
+// Retira aqueles que foram reprovados
+void CreateScholarshipList(Student *scholarships, Student *students, int numberStudents, int numberScholarships)
+{
+	int j = 0;
+	for (int k = numberStudents-1; k >= 0; k--)
+	{
+		if(students[k].reprov <= 10)
+		{
+			scholarships[j] = students[k];
+			j++;
+		}
+
+		if(j >= numberScholarships)
+			break;
+	}
+}
+
+void Display(Student students[], int len, int scholarship)
 {
 	printf("%d\n", scholarship);
     for (int i = 0; i < scholarship; i++)
