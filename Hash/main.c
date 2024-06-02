@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-//#include <stdbool.h>
+#include <stdbool.h>
 #include <math.h>
 
 #define wordSize 100
@@ -22,6 +22,7 @@ typedef struct word_save
     word wordName;
     int wordCount;
     int key;
+    bool isEmpty;
 
 } WordSave;
 
@@ -103,7 +104,7 @@ int main()
                 break;
 
             case 4:
-                
+                T4(&hashTable);
                 break;
 
             case 5:
@@ -127,6 +128,7 @@ WordSave CreateSave(word wordName, int key)
     strcpy(save.wordName, wordName);
     save.wordCount = 1;
     save.key = key;
+    save.isEmpty = false;
 
     return save;
 }
@@ -176,7 +178,6 @@ int FindElementPos(HashTable *hashTable, word w)
     {
         pos = QuadraticProbing(*hashTable, i, hashValue, w);
         i++;
-        printf("%d\n", pos);
     }
 
     if(i >= hashTable -> size)
@@ -193,20 +194,36 @@ WordSave Hash_Insert(HashTable *hashTable, word wordName)
     int i = 0;
     int hashValue = Hash(wordName, hashTable -> size);
     int pos = hashValue;
-    
-    while((hashTable -> table[pos].wordCount != 0) || (i < hashTable -> size))
+
+    int elementPos = FindElementPos(hashTable, wordName);
+
+    if(elementPos < 0) // não ta na tabela
     {
-        if(strcmp(hashTable -> table[pos].wordName, wordName) == 0)
+        while((hashTable -> table[pos].wordCount != 0) && (i < hashTable -> size))
         {
-            hashTable -> table[pos].wordCount++;
-            return hashTable -> table[pos];
-        }
-        else
-        {
+            /*
+            if(strcmp(hashTable -> table[pos].wordName, wordName) == 0)
+            {
+                hashTable -> table[pos].wordCount++;
+                return hashTable -> table[pos];
+            }
+            else
+            {
+                pos = QuadraticProbing(*hashTable, i, hashValue, wordName);
+                i++;
+            }*/
+
             pos = QuadraticProbing(*hashTable, i, hashValue, wordName);
             i++;
         }
     }
+    else    // ta na tabela
+    {
+        hashTable -> table[elementPos].wordCount++;
+        return hashTable -> table[elementPos];   
+    }
+
+    
     
     save = CreateSave(wordName, pos);
     hashTable -> table[pos] = save;
@@ -214,18 +231,6 @@ WordSave Hash_Insert(HashTable *hashTable, word wordName)
 
     return save;
 }
-
-/*
-WordSave *Hash_Search(HashTable hashTable, word wordName)
-{
-    for(int i = 0; i < hashTable.size; i++)
-    {
-        if(strcmp(hashTable.table[i].wordName, wordName) == 0)
-            return &(hashTable.table[i]);
-    }
-
-    return NULL;
-}*/
 
 WordSave *Hash_Search(HashTable *hashTable, int pos)
 {
@@ -238,11 +243,14 @@ void Hash_Delete(HashTable *hashTable, word wordName)
 
     if(pos >= 0)
     {
-        WordSave *save = Hash_Search(hashTable, pos);
-        printf("%s removida\n", save -> wordName);
+        strcpy(hashTable -> table[pos].wordName, "");
+        hashTable -> table[pos].isEmpty = true;
+        hashTable -> table[pos].wordCount = 0;
+        hashTable -> count--;
+        printf("%s removida\n", wordName);
     }
     else
-        printf("%s não encontrada\n", wordName);
+        printf("%s nao encontrada\n", wordName);
 }
 
 ////////////////////////////////////////////// PROCESS
@@ -252,12 +260,12 @@ void T1(HashTable *hashTable)
     char text[textSize];
     char *token;
 
+    fflush(stdin);
     scanf("%s", text);
     token = strtok(text, " ");
    
     while (token != NULL)
     {
-        //printf("%s\n", token);
         Hash_Insert(hashTable, token);
         token = strtok(NULL, " ");
     }
@@ -272,7 +280,9 @@ void T2(HashTable hashTable)
     {
         if(hashTable.table[i].wordCount > 0)
         {
-            if((hashTable.table[i].wordCount > mostFreqWord.wordCount) || (strcmp(hashTable.table[i].wordName, mostFreqWord.wordName) < 0))
+            if(hashTable.table[i].wordCount > mostFreqWord.wordCount)
+                mostFreqWord = hashTable.table[i];
+            else if((hashTable.table[i].wordCount == mostFreqWord.wordCount) && (strcmp(hashTable.table[i].wordName, mostFreqWord.wordName) < 0))
                 mostFreqWord = hashTable.table[i];
         }
     }
@@ -290,24 +300,16 @@ void T3(HashTable *hashTable)
     {
         word w;
         scanf("%s", w);
-        /*
-        WordSave *save = Hash_Search(hashTable, w);
 
-        if(save != NULL)
+        int pos = FindElementPos(hashTable, w);
+
+        if(pos >= 0)
+        {
+            WordSave *save = Hash_Search(hashTable, pos);
             printf("%s encontrada %d\n", save -> wordName, save -> wordCount);
+        }
         else
-            printf("%s não encontrada\n", w);
-    
-        */
-
-       int pos = FindElementPos(hashTable, w);
-       WordSave *save = Hash_Search(hashTable, pos);
-
-       if(save != NULL)
-            printf("%s encontrada %d\n", save -> wordName, save -> wordCount);
-        else
-            printf("%s não encontrada\n", w);
-       
+            printf("%s nao encontrada\n", w);
     }
 }
 
@@ -316,7 +318,7 @@ void T4(HashTable *hashTable)
     int i, linesNumber;
 
     scanf("%d", &linesNumber);
-    for(i = 0; i < hashTable -> size; i++)
+    for(i = 0; i < linesNumber; i++)
     {
         word w;
         scanf("%s", w);
