@@ -25,28 +25,40 @@ typedef struct word_save
 
 } WordSave;
 
-////////////////////////////////////////////// CREATE SAVE
+typedef struct hash_struct
+{
+    int size;
+    int count;
+    int c1;
+    int c2;
+    WordSave *table;
+
+} HashTable;
+
+////////////////////////////////////////////// CREATE STRUCTS
 
 WordSave CreateSave(word wordName, int key);
+HashTable CreateHash(int tableSize, int c1, int c2);
 
 ////////////////////////////////////////////// HASH METHOD AND TABLE
 
 int Hash(char *word, int tableSize);
-int QuadraticProbing(int i, int c1, int c2, int tableSize, int hashValue, char *word);
+int QuadraticProbing(HashTable hashTable, int i, int hashValue, char *word);
 
 ////////////////////////////////////////////// DICTIONARY OPERATIONS
 
-WordSave Hash_Insert(WordSave *table, word wordName, int c1, int c2, int tableSize);
-WordSave Hash_Delete(WordSave save, int k);
-WordSave Hash_Search(WordSave save, int k);
+WordSave Hash_Insert(HashTable *hashTable, word wordName);
+void Hash_Delete(HashTable *hashTable, word wordName);
+//WordSave *Hash_Search(HashTable hashTable, word wordName);
+WordSave *Hash_Search(HashTable *hashTable, int pos);
 
 ////////////////////////////////////////////// PROCESS
 
-int T1(WordSave *table, int c1, int c2, int tableSize);
-int T2();
-int T3();
-int T4();
-int T5();
+void T1(HashTable *hashTable);
+void T2(HashTable hashTable);
+void T3();
+void T4();
+void T5(HashTable hashTable);
 
 ////////////////////////////////////////////// HELPERS
 
@@ -61,56 +73,53 @@ int hashTeste(char *word, int tableSize, int c1, int c2);
 
 int main()
 {
-    WordSave *table;
+    HashTable hashTable;
     int tableSize, c1, c2;
     int op = -1;
     
-    scanf("%d %d %d %d", &tableSize, &c1, &c2, &op);
-    table = (WordSave*)malloc(tableSize*sizeof(WordSave));
+    scanf("%d %d %d", &tableSize, &c1, &c2);
+    hashTable = CreateHash(tableSize, c1, c2);
 
-    switch (op)
+    while(1)
     {
-        case 0:
-            exit(0);
-            break;
+        scanf("%d", &op);
 
-        case 1:
-            T1(table, c1, c2, tableSize);
-            break;
+        switch (op)
+        {
+            case 0:
+                exit(0);
+                break;
 
-        case 2:
+            case 1:
+                T1(&hashTable);
+                break;
+
+            case 2:
+                T2(hashTable);
+                break;
+
+            case 3:
+                T3(&hashTable);
+                break;
+
+            case 4:
+                
+                break;
+
+            case 5:
+                T5(hashTable);
+                break;
             
-            break;
-
-        case 3:
-            
-            break;
-
-        case 4:
-            
-            break;
-
-        case 5:
-            
-            break;
-        
-        default:
-            printf("Comando não encontrado...\n");
-            break;
+            default:
+                printf("Comando não encontrado...\n");
+                break;
+        }
     }
-
-   
-
-    //int v = hashTeste("possible", 15, 2, 2);
-
-    //Hash_Insert(table, "fly", 2, 2, 15);
-    //Hash_Insert(table, "possible", 2, 2, 15);
-
-
+    
     return 0;
 }
 
-////////////////////////////////////////////// CREATE SAVE
+////////////////////////////////////////////// CREATE STRUCTS
 
 WordSave CreateSave(word wordName, int key)
 {
@@ -120,6 +129,19 @@ WordSave CreateSave(word wordName, int key)
     save.key = key;
 
     return save;
+}
+
+HashTable CreateHash(int tableSize, int c1, int c2)
+{
+    HashTable table;
+
+    table.count = 0;
+    table.size = tableSize;
+    table.c1 = c1;
+    table.c2 = c2;
+    table.table = (WordSave*)malloc(tableSize*sizeof(WordSave));
+    
+    return table;
 }
 
 ////////////////////////////////////////////// HASH METHOD
@@ -137,72 +159,95 @@ int Hash(char *word, int tableSize)
     return v;
 }
 
-/*
-int hashTeste(char *word, int tableSize, int c1, int c2)
-{
-    int i, v = 0;
-    
-    for(i = 0; i < strlen(word); i++)
-    {
-        v += (3*v) + word[i];
-        v = v % tableSize;
-        printf("%d\n", v);
-    }
-
-    printf("\n\n COMEÇANDO \n");
-
-    for(int k = 1; k < tableSize; k++)
-    {
-        v = (v + c1*k + c2*k*k) % tableSize;
-        printf("%d\n", v);
-    }
-    
-
-    return v;
-}
-*/
-
-int QuadraticProbing(int i, int c1, int c2, int tableSize, int hashValue, char *word)
+int QuadraticProbing(HashTable hashTable, int i, int hashValue, char *word)
 {
     int pos = -1;
-    pos = (hashValue + c1*i + c2*i*i) % tableSize;
+    pos = (hashValue + (hashTable.c1)*i + (hashTable.c2)*i*i) % hashTable.size;
     return pos;
 }
 
+int FindElementPos(HashTable *hashTable, word w)
+{
+    int i = 0;
+    int hashValue =  Hash(w, hashTable->size);
+    int pos = hashValue;
+    
+    while((strcmp(hashTable->table[pos].wordName, w) != 0) && (i < hashTable -> size))
+    {
+        pos = QuadraticProbing(*hashTable, i, hashValue, w);
+        i++;
+        printf("%d\n", pos);
+    }
+
+    if(i >= hashTable -> size)
+        return -1;
+
+    return pos;
+}
 
 ////////////////////////////////////////////// DICTIONARY OPERATIONS
 
-WordSave Hash_Insert(WordSave *table, word wordName, int c1, int c2, int tableSize)
+WordSave Hash_Insert(HashTable *hashTable, word wordName)
 {
     WordSave save;
     int i = 0;
-    int hashValue = Hash(wordName, tableSize);
+    int hashValue = Hash(wordName, hashTable -> size);
     int pos = hashValue;
     
-    while((table[pos].wordCount != 0) || (i < tableSize))
+    while((hashTable -> table[pos].wordCount != 0) || (i < hashTable -> size))
     {
-        if(strcmp(table[pos].wordName, wordName) == 0)
+        if(strcmp(hashTable -> table[pos].wordName, wordName) == 0)
         {
-            table[pos].wordCount++;
-            return table[pos];
+            hashTable -> table[pos].wordCount++;
+            return hashTable -> table[pos];
         }
         else
         {
-            pos = QuadraticProbing(i, c1, c2, tableSize, hashValue, wordName);
+            pos = QuadraticProbing(*hashTable, i, hashValue, wordName);
             i++;
         }
-        
     }
     
     save = CreateSave(wordName, pos);
-    table[pos] = save;
+    hashTable -> table[pos] = save;
+    hashTable -> count++;
 
     return save;
 }
 
+/*
+WordSave *Hash_Search(HashTable hashTable, word wordName)
+{
+    for(int i = 0; i < hashTable.size; i++)
+    {
+        if(strcmp(hashTable.table[i].wordName, wordName) == 0)
+            return &(hashTable.table[i]);
+    }
+
+    return NULL;
+}*/
+
+WordSave *Hash_Search(HashTable *hashTable, int pos)
+{
+    return &(hashTable -> table[pos]);
+}
+
+void Hash_Delete(HashTable *hashTable, word wordName)
+{
+    int pos = FindElementPos(hashTable, wordName);
+
+    if(pos >= 0)
+    {
+        WordSave *save = Hash_Search(hashTable, pos);
+        printf("%s removida\n", save -> wordName);
+    }
+    else
+        printf("%s não encontrada\n", wordName);
+}
+
 ////////////////////////////////////////////// PROCESS
 
-int T1(WordSave *table, int c1, int c2, int tableSize)
+void T1(HashTable *hashTable)
 {
     char text[textSize];
     char *token;
@@ -213,8 +258,83 @@ int T1(WordSave *table, int c1, int c2, int tableSize)
     while (token != NULL)
     {
         //printf("%s\n", token);
-        Hash_Insert(table, token, c1, c2, tableSize);
+        Hash_Insert(hashTable, token);
         token = strtok(NULL, " ");
     }
+}
 
+void T2(HashTable hashTable)
+{
+    int i;
+    WordSave mostFreqWord = hashTable.table[0];
+
+    for(i = 0; i < hashTable.size; i++)
+    {
+        if(hashTable.table[i].wordCount > 0)
+        {
+            if((hashTable.table[i].wordCount > mostFreqWord.wordCount) || (strcmp(hashTable.table[i].wordName, mostFreqWord.wordName) < 0))
+                mostFreqWord = hashTable.table[i];
+        }
+    }
+
+    printf("foram encontradas %d palavras diferentes\n", hashTable.count);
+    printf("palavra mais frequente = %s, encontrada %d vezes\n", mostFreqWord.wordName, mostFreqWord.wordCount);
+}
+
+void T3(HashTable *hashTable)
+{
+    int linesNumber, i;
+
+    scanf("%d", &linesNumber);
+    for(i = 0; i < linesNumber; i++)
+    {
+        word w;
+        scanf("%s", w);
+        /*
+        WordSave *save = Hash_Search(hashTable, w);
+
+        if(save != NULL)
+            printf("%s encontrada %d\n", save -> wordName, save -> wordCount);
+        else
+            printf("%s não encontrada\n", w);
+    
+        */
+
+       int pos = FindElementPos(hashTable, w);
+       WordSave *save = Hash_Search(hashTable, pos);
+
+       if(save != NULL)
+            printf("%s encontrada %d\n", save -> wordName, save -> wordCount);
+        else
+            printf("%s não encontrada\n", w);
+       
+    }
+}
+
+void T4(HashTable *hashTable)
+{
+    int i, linesNumber;
+
+    scanf("%d", &linesNumber);
+    for(i = 0; i < hashTable -> size; i++)
+    {
+        word w;
+        scanf("%s", w);
+        Hash_Delete(hashTable, w);
+    }
+}
+
+void T5(HashTable hashTable)
+{
+    int i;
+
+    printf("imprimindo tabela hash\n");
+    for(i = 0; i < hashTable.size; i++)
+    {
+        if(hashTable.table[i].wordCount > 0)
+        {
+            printf("%s %d\n", hashTable.table[i].wordName, hashTable.table[i].key);   
+        }
+    }
+    printf("fim da tabela hash\n");
 }
