@@ -3,14 +3,17 @@
 /////////////////////////////////
 
 
+// -1 nunca ocupado
+// 0  vazio já ocupado
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
+//#include <stdbool.h>
 #include <math.h>
 
-#define wordSize 100
-#define textSize 100000
+#define wordSize 10000
+#define textSize 1000000
 
 typedef char word[wordSize];
 
@@ -22,7 +25,6 @@ typedef struct word_save
     word wordName;
     int wordCount;
     int key;
-    bool isEmpty;
 
 } WordSave;
 
@@ -128,7 +130,6 @@ WordSave CreateSave(word wordName, int key)
     strcpy(save.wordName, wordName);
     save.wordCount = 1;
     save.key = key;
-    save.isEmpty = false;
 
     return save;
 }
@@ -142,6 +143,12 @@ HashTable CreateHash(int tableSize, int c1, int c2)
     table.c1 = c1;
     table.c2 = c2;
     table.table = (WordSave*)malloc(tableSize*sizeof(WordSave));
+
+    for (int i = 0; i < table.size; i++)
+    {
+        table.table[i].wordCount = -1;
+    }
+    
     
     return table;
 }
@@ -194,36 +201,42 @@ WordSave Hash_Insert(HashTable *hashTable, word wordName)
     int i = 0;
     int hashValue = Hash(wordName, hashTable -> size);
     int pos = hashValue;
+    int savePos = -1;
 
-    int elementPos = FindElementPos(hashTable, wordName);
-
-    if(elementPos < 0) // não ta na tabela
+/*
+    while((hashTable -> table[pos].wordCount != 0) && (i < hashTable -> size))
     {
-        while((hashTable -> table[pos].wordCount != 0) && (i < hashTable -> size))
+        if(strcmp(hashTable -> table[pos].wordName, wordName) == 0)
         {
-            /*
-            if(strcmp(hashTable -> table[pos].wordName, wordName) == 0)
-            {
-                hashTable -> table[pos].wordCount++;
-                return hashTable -> table[pos];
-            }
-            else
-            {
-                pos = QuadraticProbing(*hashTable, i, hashValue, wordName);
-                i++;
-            }*/
-
+            hashTable -> table[pos].wordCount++;
+            return hashTable -> table[pos];
+        }
+        else
+        {
             pos = QuadraticProbing(*hashTable, i, hashValue, wordName);
             i++;
         }
-    }
-    else    // ta na tabela
+    }*/
+
+    while (hashTable -> table[pos].wordCount != -1)
     {
-        hashTable -> table[elementPos].wordCount++;
-        return hashTable -> table[elementPos];   
+        if(hashTable->table[pos].wordCount == 0 && savePos == -1)
+        {
+            savePos = pos;
+        }
+
+        if(strcmp(hashTable -> table[pos].wordName, wordName) == 0)
+        {
+            hashTable -> table[pos].wordCount++;
+            return hashTable -> table[pos];
+        }
+        
+        pos = QuadraticProbing(*hashTable, i, hashValue, wordName);
+        i++;
     }
 
-    
+    if(savePos != -1)
+        pos = savePos;
     
     save = CreateSave(wordName, pos);
     hashTable -> table[pos] = save;
@@ -244,9 +257,8 @@ void Hash_Delete(HashTable *hashTable, word wordName)
     if(pos >= 0)
     {
         strcpy(hashTable -> table[pos].wordName, "");
-        hashTable -> table[pos].isEmpty = true;
         hashTable -> table[pos].wordCount = 0;
-        hashTable -> count--;
+        hashTable ->count--;
         printf("%s removida\n", wordName);
     }
     else
@@ -258,14 +270,25 @@ void Hash_Delete(HashTable *hashTable, word wordName)
 void T1(HashTable *hashTable)
 {
     char text[textSize];
+    //char *text;
     char *token;
 
-    fflush(stdin);
-    scanf("%s", text);
+    //size_t sizeText = 1000000;
+
+    //fflush(stdin);
+    //scanf("%s", text);
+    fgets(text, textSize, stdin);
+
+    //getline(&text, &sizeText, stdin);
+
+    text[strcspn(text, "\r")] = 0;
+    text[strcspn(text, "\n")] = 0;
+
     token = strtok(text, " ");
-   
+    
     while (token != NULL)
     {
+        //printf("%s", token);
         Hash_Insert(hashTable, token);
         token = strtok(NULL, " ");
     }
