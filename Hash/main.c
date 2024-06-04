@@ -221,9 +221,7 @@ WordSave Hash_Insert(HashTable *hashTable, word wordName)
     while (hashTable -> table[pos].wordCount != -1)
     {
         if(hashTable->table[pos].wordCount == 0 && savePos == -1)
-        {
             savePos = pos;
-        }
 
         if(strcmp(hashTable -> table[pos].wordName, wordName) == 0)
         {
@@ -270,16 +268,16 @@ void Hash_Delete(HashTable *hashTable, word wordName)
 void T1(HashTable *hashTable)
 {
     char text[textSize];
-    //char *text;
     char *token;
 
-    //size_t sizeText = 1000000;
-
     //fflush(stdin);
-    //scanf("%s", text);
     fgets(text, textSize, stdin);
+    //scanf("%s", text);
 
-    //getline(&text, &sizeText, stdin);
+    //printf("%s", text);
+    //printf("\n\n%d - LAST CHAR: %d", strlen(text), text[strlen(text)-1]);
+
+    //Length max de 4096
 
     text[strcspn(text, "\r")] = 0;
     text[strcspn(text, "\n")] = 0;
@@ -288,7 +286,6 @@ void T1(HashTable *hashTable)
     
     while (token != NULL)
     {
-        //printf("%s", token);
         Hash_Insert(hashTable, token);
         token = strtok(NULL, " ");
     }
