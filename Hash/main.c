@@ -12,8 +12,8 @@
 //#include <stdbool.h>
 #include <math.h>
 
-#define wordSize 10000
-#define textSize 1000000
+#define wordSize 40
+#define textSize 200000
 
 typedef char word[wordSize];
 
@@ -181,14 +181,14 @@ int FindElementPos(HashTable *hashTable, word w)
     int hashValue =  Hash(w, hashTable->size);
     int pos = hashValue;
     
-    while((strcmp(hashTable->table[pos].wordName, w) != 0) && (i < hashTable -> size))
+    while(strcmp(hashTable->table[pos].wordName, w) != 0)
     {
         pos = QuadraticProbing(*hashTable, i, hashValue, w);
         i++;
-    }
 
-    if(i >= hashTable -> size)
-        return -1;
+        if(hashTable->table[pos].wordCount != -1)
+            return -1;
+    }
 
     return pos;
 }
@@ -202,21 +202,6 @@ WordSave Hash_Insert(HashTable *hashTable, word wordName)
     int hashValue = Hash(wordName, hashTable -> size);
     int pos = hashValue;
     int savePos = -1;
-
-/*
-    while((hashTable -> table[pos].wordCount != 0) && (i < hashTable -> size))
-    {
-        if(strcmp(hashTable -> table[pos].wordName, wordName) == 0)
-        {
-            hashTable -> table[pos].wordCount++;
-            return hashTable -> table[pos];
-        }
-        else
-        {
-            pos = QuadraticProbing(*hashTable, i, hashValue, wordName);
-            i++;
-        }
-    }*/
 
     while (hashTable -> table[pos].wordCount != -1)
     {
@@ -270,17 +255,14 @@ void T1(HashTable *hashTable)
     char text[textSize];
     char *token;
 
-    //fflush(stdin);
-    fgets(text, textSize, stdin);
-    //scanf("%s", text);
-
-    //printf("%s", text);
-    //printf("\n\n%d - LAST CHAR: %d", strlen(text), text[strlen(text)-1]);
-
-    //Length max de 4096
-
-    text[strcspn(text, "\r")] = 0;
-    text[strcspn(text, "\n")] = 0;
+    
+    if(fgets(text, textSize, stdin) != NULL)
+    {
+        int lastChar = strlen(text) - 1;
+        if(text[lastChar] == '\n')
+            text[lastChar] = '\0';
+    }
+    
 
     token = strtok(text, " ");
     
@@ -319,6 +301,7 @@ void T3(HashTable *hashTable)
     for(i = 0; i < linesNumber; i++)
     {
         word w;
+        fflush(stdin);
         scanf("%s", w);
 
         int pos = FindElementPos(hashTable, w);
